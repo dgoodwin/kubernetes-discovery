@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 // TODO:
@@ -24,13 +27,36 @@ func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	encodedCA, err := readAndEncodeCA(CAPath)
+	if err != nil {
+		http.Error(resp, "Error encoded CA", http.StatusInternalServerError)
+		return
+	}
+
 	clusterInfo := ClusterInfo{
 		Type:             "ClusterInfo",
 		Version:          "v1",
-		RootCertificates: "NOTHINGHEreYET!",
+		RootCertificates: encodedCA,
 	}
 
 	if err := json.NewEncoder(resp).Encode(clusterInfo); err != nil {
 		panic(err)
 	}
+}
+
+func readAndEncodeCA(caPath string) (string, error) {
+	file, err := os.Open(CAPath)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("Data: %s", data)
+
+	encodedCA := base64.StdEncoding.EncodeToString([]byte(data))
+	log.Printf("Encoded: %s", encodedCA)
+	return encodedCA, err
 }

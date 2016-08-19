@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,8 +9,8 @@ import (
 	"os"
 )
 
-// TODO:
-const tempToken string = "mytoken"
+// TODO: Just using a hardcoded token for now.
+const tempToken string = "TOKENID.TOKEN"
 
 func Index(resp http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(resp, "Welcome!")
@@ -27,7 +26,7 @@ func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	encodedCA, err := readAndEncodeCA(CAPath)
+	encodedCA, err := readCA(CAPath)
 	if err != nil {
 		http.Error(resp, "Error encoded CA", http.StatusInternalServerError)
 		return
@@ -44,7 +43,7 @@ func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func readAndEncodeCA(caPath string) (string, error) {
+func readCA(caPath string) (string, error) {
 	file, err := os.Open(CAPath)
 	if err != nil {
 		return "", err
@@ -56,7 +55,5 @@ func readAndEncodeCA(caPath string) (string, error) {
 	}
 	log.Printf("Data: %s", data)
 
-	encodedCA := base64.StdEncoding.EncodeToString([]byte(data))
-	log.Printf("Encoded: %s", encodedCA)
-	return encodedCA, err
+	return string(data), nil
 }

@@ -5,21 +5,25 @@ This prototype is expected to be run by Kubernetes itself for the time being,
 and will hopefully be merged into the core API at a later time.
 
 ## Running from source
-- Generate a CA cert and base64 encode it, saving the result to /tmp/secret/ca.pem.b64.
+- Generate a CA cert save it to: /tmp/secret/ca.pem
 - `go get`
 - `go install && ~/go/bin/kubernetes-discovery`
 
 ## Running in Docker
-- `docker build -t kubernetes-discovery-proto .`
-- `docker run -p 8080:8080 -v /home/dgoodwin/go/src/github.com/dgoodwin/kubernetes-discovery/ca.pem:/var/lib/kubernetes/ca.pem --name kubernetes-discovery --rm kubernetes-discovery-proto`
+- `docker run --rm -p 9898:9898 -v /tmp/secret/ca.pem:/tmp/secret/ca.pem --name kube-disco dgoodwin/kube-disco`
 
 ## Running in Kubernetes
 
-TODO
+A dummy certificate is included in ca-secret.yaml.
+
+```
+create -f ca-secret.yaml
+create -f kube-disco.yaml
+```
 
 ## Testing the API
 
-`curl "http://localhost:8080/cluster-info/v1/?token-id=TOKENID.TOKEN"`
+`curl "http://localhost:9898/cluster-info/v1/?token-id=TOKENID.TOKEN"`
 
 
 

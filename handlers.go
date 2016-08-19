@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -26,7 +27,7 @@ func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	encodedCA, err := readCA(CAPath)
+	encodedCA, err := readAndEncodeCA(CAPath)
 	if err != nil {
 		http.Error(resp, "Error encoded CA", http.StatusInternalServerError)
 		return
@@ -43,7 +44,7 @@ func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func readCA(caPath string) (string, error) {
+func readAndEncodeCA(caPath string) (string, error) {
 	file, err := os.Open(CAPath)
 	if err != nil {
 		return "", err
@@ -55,5 +56,7 @@ func readCA(caPath string) (string, error) {
 	}
 	log.Printf("Data: %s", data)
 
-	return string(data), nil
+	encodedCA := base64.StdEncoding.EncodeToString([]byte(data))
+	log.Printf("Encoded: %s", encodedCA)
+	return encodedCA, nil
 }

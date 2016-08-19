@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +10,7 @@ import (
 // clients looking to connect. Because we expect to use kubernetes secrets
 // for the time being, this file is expected to be a base64 encoded version
 // of the normal cert PEM.
-const CAPath = "/tmp/secret/ca.pem.b64"
+const CAPath = "/tmp/secret/ca.pem"
 
 func main() {
 
@@ -27,18 +25,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("ERROR: Unable to read %s", CAPath)
 	}
-
-	// TODO: Just verifying our cert is decoding properly, this can all
-	// be removed.
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatalf("ERROR: Unable to read %s", CAPath)
-	}
 	file.Close()
-	b64Str := string(data)
-	decodedPEM, err := base64.StdEncoding.DecodeString(b64Str)
-	log.Printf("Decoded PEM: \n\n%s", decodedPEM)
 
 	router := NewRouter()
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Printf("Listening for requests on port 9898.")
+	log.Fatal(http.ListenAndServe(":9898", router))
 }

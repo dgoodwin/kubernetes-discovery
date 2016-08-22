@@ -21,8 +21,12 @@ func Index(resp http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(resp, "Welcome!")
 }
 
-func ClusterInfoIndex(resp http.ResponseWriter, req *http.Request) {
+// ClusterInfoHandler implements the http.ServeHTTP method and allows us to
+// mock out portions of the request handler in tests.
+type ClusterInfoHandler struct {
+}
 
+func (cih *ClusterInfoHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	tokenId := req.FormValue("token-id")
 	log.Printf("Got token ID: %s", tokenId)
 	if tokenId != tempTokenId {
@@ -93,7 +97,7 @@ func readAndEncodeCA(caPath string) (string, error) {
 }
 
 // TODO: Move into test package
-// Decode hex-encoded string into byte array. Strips whitespace (for testing).
+// TODO: Should we use base64 instead?
 func fromHexBytes(base16 string) []byte {
 	val, err := hex.DecodeString(base16)
 	if err != nil {

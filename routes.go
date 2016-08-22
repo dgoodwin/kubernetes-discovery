@@ -7,26 +7,20 @@ import (
 )
 
 type Route struct {
-	Name        string
-	Method      string
-	Pattern     string
-	HandlerFunc http.HandlerFunc
+	Name    string
+	Method  string
+	Pattern string
+	Handler http.Handler
 }
 
 type Routes []Route
 
 var routes = Routes{
 	Route{
-		"Index",
-		"GET",
-		"/",
-		Index,
-	},
-	Route{
 		"ClusterInfoIndex",
 		"GET",
 		"/cluster-info/v1/",
-		ClusterInfoIndex,
+		&ClusterInfoHandler{},
 	},
 }
 
@@ -38,7 +32,7 @@ func NewRouter() *mux.Router {
 			Methods(route.Method).
 			Path(route.Pattern).
 			Name(route.Name).
-			Handler(route.HandlerFunc)
+			Handler(route.Handler)
 	}
 
 	return router

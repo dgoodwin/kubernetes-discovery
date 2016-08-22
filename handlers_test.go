@@ -24,11 +24,11 @@ func TestClusterInfoIndex(t *testing.T) {
 			http.StatusForbidden,
 		},
 		"valid token": {
-			fmt.Sprintf("/cluster-info/v1/?token-id=%s", testTokenId),
+			fmt.Sprintf("/cluster-info/v1/?token-id=%s", tempTokenId),
 			http.StatusOK,
 		},
 		"invalid token": {
-			fmt.Sprintf("/cluster-info/v1/?token-id=JUNK", testTokenId, testToken),
+			"/cluster-info/v1/?token-id=JUNK",
 			http.StatusForbidden,
 		},
 	}
@@ -43,7 +43,7 @@ func TestClusterInfoIndex(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(ClusterInfoIndex)
+		handler := ClusterInfoHandler{}
 
 		handler.ServeHTTP(rr, req)
 

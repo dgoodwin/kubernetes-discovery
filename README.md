@@ -23,7 +23,7 @@ create -f kube-disco.yaml
 
 ## Testing the API
 
-`curl "http://localhost:9898/cluster-info/v1/?token-id=TOKENID.TOKEN"`
+`curl "http://localhost:9898/cluster-info/v1/?token-id=TOKENID"`
 
 
 

@@ -20,7 +20,7 @@ var routes = Routes{
 		"ClusterInfoIndex",
 		"GET",
 		"/cluster-info/v1/",
-		&ClusterInfoHandler{},
+		NewClusterInfoHandler(),
 	},
 }
 

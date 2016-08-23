@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,38 +18,92 @@ import (
 const tempTokenId string = "TOKENID"
 const tempToken string = "EF1BA4F26DDA9FE2"
 
-func Index(resp http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(resp, "Welcome!")
+// tokenLoader is an interface for abstracting how we validate
+// token IDs and lookup their corresponding token.
+type tokenLoader interface {
+	// Lookup returns the token for a given token ID, or an error if the token ID
+	// does not exist. Both token and it's ID are expected to be hex encoded strings.
+	Lookup(tokenId string) (string, error)
+}
+
+type hardcodedTokenLoader struct {
+}
+
+func (tl *hardcodedTokenLoader) Lookup(tokenId string) (string, error) {
+	if tokenId == tempTokenId {
+		return tempToken, nil
+	}
+	return "", errors.New(fmt.Sprintf("invalid token: %s", tokenId))
+}
+
+// caLoader is an interface for abstracting how we load the CA certificates
+// for the cluster.
+type caLoader interface {
+	LoadPEM() (string, error)
+}
+
+// fsCALoader is a caLoader for loading the PEM encoded CA from
+// /tmp/secret/ca.pem.
+type fsCALoader struct {
+}
+
+func (cl *fsCALoader) LoadPEM() (string, error) {
+	file, err := os.Open(CAPath)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 // ClusterInfoHandler implements the http.ServeHTTP method and allows us to
 // mock out portions of the request handler in tests.
 type ClusterInfoHandler struct {
+	tokenLoader tokenLoader
+	caLoader    caLoader
+}
+
+func NewClusterInfoHandler() *ClusterInfoHandler {
+	tl := hardcodedTokenLoader{}
+	cl := fsCALoader{}
+	return &ClusterInfoHandler{
+		tokenLoader: &tl,
+		caLoader:    &cl,
+	}
 }
 
 func (cih *ClusterInfoHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	tokenId := req.FormValue("token-id")
 	log.Printf("Got token ID: %s", tokenId)
-	if tokenId != tempTokenId {
-		log.Print("Invalid token")
+	token, err := cih.tokenLoader.Lookup(tokenId)
+	if err != nil {
+		log.Printf("Invalid token: %s", err)
 		http.Error(resp, "Forbidden", http.StatusForbidden)
 		return
 	}
+	log.Printf("Loaded token: %s", token)
 
-	encodedCA, err := readAndEncodeCA(CAPath)
+	caPEM, err := cih.caLoader.LoadPEM()
+	caB64 := base64.StdEncoding.EncodeToString([]byte(caPEM))
+
 	if err != nil {
-		http.Error(resp, "Error encoded CA", http.StatusInternalServerError)
+		http.Error(resp, "Error encoding CA", http.StatusInternalServerError)
 		return
 	}
 
 	clusterInfo := ClusterInfo{
 		Type:             "ClusterInfo",
 		Version:          "v1",
-		RootCertificates: encodedCA,
+		RootCertificates: caB64,
 	}
 
 	// Instantiate an signer using HMAC-SHA256.
-	hmacTestKey := fromHexBytes(tempToken)
+	hmacTestKey := fromHexBytes(token)
 	signer, err := jose.NewSigner(jose.HS256, hmacTestKey)
 	if err != nil {
 		http.Error(resp, fmt.Sprintf("Error creating JWS signer: %s", err), http.StatusInternalServerError)
@@ -79,21 +134,6 @@ func (cih *ClusterInfoHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 
 	resp.Write([]byte(serialized))
 
-}
-
-func readAndEncodeCA(caPath string) (string, error) {
-	file, err := os.Open(CAPath)
-	if err != nil {
-		return "", err
-	}
-
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-
-	encodedCA := base64.StdEncoding.EncodeToString([]byte(data))
-	return encodedCA, nil
 }
 
 // TODO: Move into test package

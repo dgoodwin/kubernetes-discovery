@@ -10,10 +10,6 @@ import (
 	"gopkg.in/square/go-jose.v1"
 )
 
-// TODO: add a token lookup interface for mocking
-const testTokenId = "TOKENID"
-const testToken = "TOKEN"
-
 func TestClusterInfoIndex(t *testing.T) {
 	tests := map[string]struct {
 		url       string
@@ -43,7 +39,8 @@ func TestClusterInfoIndex(t *testing.T) {
 		}
 
 		rr := httptest.NewRecorder()
-		handler := ClusterInfoHandler{}
+		// TODO: mock/stub here
+		handler := NewClusterInfoHandler()
 
 		handler.ServeHTTP(rr, req)
 
